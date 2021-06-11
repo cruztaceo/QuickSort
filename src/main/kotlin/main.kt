@@ -3,29 +3,25 @@ import kotlin.system.measureTimeMillis
 
 fun main() {
     val arraySizes = intArrayOf(10, 100, 200, 500, 1000, 2000, 5000, 10000)
-//    val array10 = generateArrayNth(10)
-//    val array100 = generateArrayNth(100)
-//    val array200 = generateArrayNth(200)
-//    val array500 = generateArrayNth(500)
-//    val array1000 = generateArrayNth(1000)
-//    val array2000 = generateArrayNth(2000)
-//    val array5000 = generateArrayNth(5000)
-//    val array10000 = generateArrayNth(10000)
+    val records = mutableListOf<Register>()
 
-    val timeRecords = mutableListOf<Long>()
+    val arrays = arraySizes.map { generateArrayNth(it) }
 
-    for (i in 0 until 50) {
-        arraySizes.map { generateArrayNth(it) }.map { a ->
-            {
-                val result = fisherYatesPermutation(a.toMutableList())
-                val time = measureTimeMillis {
-                    quicksort(result, 0, result.lastIndex)
-                }
-                timeRecords.add(time)
-            }
+    arrays.map { a ->
+        val timeRecords = mutableListOf<Long>()
+        repeat(50) {
+            timeRecords.add(permuteAndSortTime(a.toMutableList()))
         }
+        records.add(Register(a.size, timeRecords))
     }
-    println(timeRecords.toLongArray().contentToString())
+    records.map { println("Nth: ${it.nth}, times: ${it.times.toLongArray().contentToString()}") }
+}
+
+fun permuteAndSortTime(A: MutableList<Int>): Long {
+    val permutation = fisherYatesPermutation(A)
+    return measureTimeMillis {
+        quicksort(permutation, 0, permutation.lastIndex)
+    }
 }
 
 fun quicksort(A: MutableList<Int>, lo: Int, hi: Int): MutableList<Int> {
@@ -67,3 +63,5 @@ fun fisherYatesPermutation(A: MutableList<Int>): MutableList<Int> {
 fun generateArrayNth(n: Int): IntArray {
     return IntArray(n) { i -> i + 1 }
 }
+
+class Register(val nth: Int, val times: MutableList<Long>)
