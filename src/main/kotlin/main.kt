@@ -24,7 +24,7 @@ fun main() {
         }
         records.add(Register(a.size, timeRecords))
     }
-    records.map { println("Nth: ${it.nth}, times: ${it.times.toLongArray().contentToString()}") }
+    records.map { println("Array Size: ${it.nth}, times: ${it.times.toLongArray().contentToString()}") }
 
     val p = plot(records)
 
