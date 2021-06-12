@@ -1,5 +1,6 @@
 import jetbrains.datalore.plot.PlotHtmlExport
 import jetbrains.datalore.plot.PlotHtmlHelper.scriptUrl
+import jetbrains.letsPlot.export.ggsave
 import jetbrains.letsPlot.geom.geomPoint
 import jetbrains.letsPlot.ggsize
 import jetbrains.letsPlot.intern.Plot
@@ -31,6 +32,7 @@ fun main() {
     // Export to HTML.
     // Note: if all you need is to save HTML to a file than you can just use the 'ggsave()' function.
     val content = PlotHtmlExport.buildHtmlFromRawSpecs(p.toSpec(), scriptUrl("2.0.4"))
+    ggsave(p, "myPlot.svg")
     openInBrowser(content)
 }
 
@@ -90,7 +92,7 @@ fun plot(records: MutableList<Register>): Plot {
     )
 
     var p = letsPlot(data) { x = "Size"; y = "Time" }
-    p += geomPoint { color = "Time" } + statSmooth(method = "loess") { color = "Time" } + ggsize(900, 500)
+    p += geomPoint { color = "Time" } + statSmooth(method = "loess") { color = "Time" } + ggsize(1500, 700)
     return p
 }
 
