@@ -1,3 +1,13 @@
+import jetbrains.datalore.plot.PlotHtmlExport
+import jetbrains.datalore.plot.PlotHtmlHelper.scriptUrl
+import jetbrains.letsPlot.geom.geomPoint
+import jetbrains.letsPlot.ggsize
+import jetbrains.letsPlot.intern.Plot
+import jetbrains.letsPlot.intern.toSpec
+import jetbrains.letsPlot.letsPlot
+import jetbrains.letsPlot.stat.statSmooth
+import java.awt.Desktop
+import java.io.File
 import kotlin.random.Random
 import kotlin.system.measureTimeMillis
 
@@ -15,6 +25,13 @@ fun main() {
         records.add(Register(a.size, timeRecords))
     }
     records.map { println("Nth: ${it.nth}, times: ${it.times.toLongArray().contentToString()}") }
+
+    val p = plot(records)
+
+    // Export to HTML.
+    // Note: if all you need is to save HTML to a file than you can just use the 'ggsave()' function.
+    val content = PlotHtmlExport.buildHtmlFromRawSpecs(p.toSpec(), scriptUrl("2.0.3"))
+    openInBrowser(content)
 }
 
 fun permuteAndSortTime(A: MutableList<Int>): Long {
@@ -65,3 +82,25 @@ fun generateArrayNth(n: Int): IntArray {
 }
 
 class Register(val nth: Int, val times: MutableList<Long>)
+
+fun plot(records: MutableList<Register>): Plot {
+    val data = mapOf(
+        "Size" to records.map { i -> List(i.times.size) { i.nth } }.flatten(),
+        "Time" to records.flatMap { it.times }
+    )
+
+    var p = letsPlot(data) { x = "Size"; y = "Time" }
+    p += geomPoint { color = "Time" } + statSmooth(method = "loess") { color = "Time" } + ggsize(900, 500)
+    return p
+}
+
+
+fun openInBrowser(content: String) {
+    val dir = File(System.getProperty("user.dir"), "lets-plot-images")
+    dir.mkdir()
+    val file = File(dir.canonicalPath, "my_plot.html")
+    file.createNewFile()
+    file.writeText(content)
+
+    Desktop.getDesktop().browse(file.toURI())
+}
