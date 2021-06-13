@@ -13,20 +13,26 @@ import kotlin.random.Random
 import kotlin.system.measureTimeMillis
 
 fun main() {
-    val arraySizes = intArrayOf(10, 100, 200, 500, 1000, 2000, 5000, 10000)
-    val records = mutableListOf<Register>()
+    //Array of sizes
+    val sizes = intArrayOf(10, 100, 200, 500, 1000, 2000, 5000, 10000)
+    val records = mutableListOf<Record>()
 
-    val arrays = arraySizes.map { generateArrayNth(it) }
+    // Create arrays for each size in sizes array
+    val arrays = sizes.map { generateArrayNth(it) }
 
+    // Per each array repeat process 50 times and take time from quicksorting
     arrays.map { a ->
         val timeRecords = mutableListOf<Long>()
         repeat(50) {
             timeRecords.add(permuteAndSortTime(a.toMutableList()))
         }
-        records.add(Register(a.size, timeRecords))
+        // add total of time records in records array
+        records.add(Record(a.size, timeRecords))
     }
-    records.map { println("Array Size: ${it.nth}, times: ${it.times.toLongArray().contentToString()}") }
+    //print results
+    records.map { println("Array Size: ${it.size}, times: ${it.times.toLongArray().contentToString()}") }
 
+    //plot records
     val p = plot(records)
 
     // Export to HTML.
@@ -36,6 +42,13 @@ fun main() {
     openInBrowser(content)
 }
 
+/**
+ *
+ * Permute and Sort
+ *
+ * @param A MutableList of Int
+ * @return Time of sorting using quicksort
+ */
 fun permuteAndSortTime(A: MutableList<Int>): Long {
     val permutation = fisherYatesPermutation(A)
     return measureTimeMillis {
@@ -43,6 +56,14 @@ fun permuteAndSortTime(A: MutableList<Int>): Long {
     }
 }
 
+/**
+ * QuickSort method
+ *
+ * @param A Array to sort
+ * @param lo Lowest Index
+ * @param hi Highest Index
+ * @return Sorted array
+ */
 fun quicksort(A: MutableList<Int>, lo: Int, hi: Int): MutableList<Int> {
     if (lo < hi) {
         val p = randomizedPartition(A, lo, hi)
@@ -52,12 +73,28 @@ fun quicksort(A: MutableList<Int>, lo: Int, hi: Int): MutableList<Int> {
     return A
 }
 
+/**
+ * Method that generates a random partition
+ *
+ * @param A Array to sort
+ * @param lo Lowest Index
+ * @param hi Highest Index
+ * @return ordered partition
+ */
 fun randomizedPartition(A: MutableList<Int>, lo: Int, hi: Int): Int {
     val pivotIndex = Random.nextInt(lo, hi)
     A[pivotIndex] = A[hi].also { A[hi] = A[pivotIndex] }
     return partition(A, lo, hi)
 }
 
+/**
+ * Method to sort partition
+ *
+ * @param A Array to sort
+ * @param lo Lowest Index
+ * @param hi Highest Index
+ * @return Sorted Partition
+ */
 fun partition(A: MutableList<Int>, lo: Int, hi: Int): Int {
     val pivot = A[hi]
     var i = lo
@@ -71,6 +108,12 @@ fun partition(A: MutableList<Int>, lo: Int, hi: Int): Int {
     return i
 }
 
+/**
+ * Fisher-Yates Permutation
+ *
+ * @param A Array to permute
+ * @return Permuted array
+ */
 fun fisherYatesPermutation(A: MutableList<Int>): MutableList<Int> {
     for (i in A.lastIndex downTo 1) {
         val j = Random.nextInt(0, i)
@@ -79,15 +122,30 @@ fun fisherYatesPermutation(A: MutableList<Int>): MutableList<Int> {
     return A
 }
 
+/**
+ * Generate array of n size
+ *
+ * @param n size
+ * @return Array of n size from 1 -> n
+ */
 fun generateArrayNth(n: Int): IntArray {
     return IntArray(n) { i -> i + 1 }
 }
 
-class Register(val nth: Int, val times: MutableList<Long>)
+/**
+ * Record Class
+ */
+class Record(val size: Int, val times: MutableList<Long>)
 
-fun plot(records: MutableList<Register>): Plot {
+/**
+ * Plot Record Array
+ *
+ * @param records Records Array to Plot
+ * @return Plot
+ */
+fun plot(records: MutableList<Record>): Plot {
     val data = mapOf(
-        "Size" to records.map { i -> List(i.times.size) { i.nth } }.flatten(),
+        "Size" to records.map { i -> List(i.times.size) { i.size } }.flatten(),
         "Time" to records.flatMap { it.times }
     )
 
@@ -96,7 +154,11 @@ fun plot(records: MutableList<Register>): Plot {
     return p
 }
 
-
+/**
+ * Method to open plot in browser
+ *
+ * @param content Content to open in browser and save in my_plot.html file
+ */
 fun openInBrowser(content: String) {
     val dir = File(System.getProperty("user.dir"), "lets-plot-images")
     dir.mkdir()

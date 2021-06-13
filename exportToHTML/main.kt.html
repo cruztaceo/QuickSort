@@ -1,0 +1,221 @@
+<html>
+<head>
+    <title>main.kt</title>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+    <style type="text/css">
+.s0 { color: #080808;}
+.s1 { color: #0033b3;}
+.s2 { color: #8c8c8c; font-style: italic;}
+.s3 { color: #1750eb;}
+.s4 { color: #067d17;}
+.s5 { color: #0037a6;}
+.s6 { color: #8c8c8c; font-style: italic;}
+
+    </style>
+</head>
+<body bgcolor="#ffffff">
+<table BGCOLOR="#c0c0c0" CELLPADDING=5 CELLSPACING=0 COLS=1 WIDTH="100%">
+    <tr>
+        <td>
+            <center>
+                <font color="#000000" face="Arial, Helvetica">
+                    main.kt</font>
+            </center>
+        </td>
+    </tr>
+</table>
+<pre><span class="s0">import jetbrains.datalore.plot.PlotHtmlExport</span>
+<span class="s0">import jetbrains.datalore.plot.PlotHtmlHelper.scriptUrl</span>
+<span class="s0">import jetbrains.letsPlot.export.ggsave</span>
+<span class="s0">import jetbrains.letsPlot.geom.geomPoint</span>
+<span class="s0">import jetbrains.letsPlot.ggsize</span>
+<span class="s0">import jetbrains.letsPlot.intern.Plot</span>
+<span class="s0">import jetbrains.letsPlot.intern.toSpec</span>
+<span class="s0">import jetbrains.letsPlot.letsPlot</span>
+<span class="s0">import jetbrains.letsPlot.stat.statSmooth</span>
+<span class="s0">import java.awt.Desktop</span>
+<span class="s0">import java.io.File</span>
+<span class="s0">import kotlin.random.Random</span>
+<span class="s0">import kotlin.system.measureTimeMillis</span>
+
+<span class="s1">fun </span><span class="s0">main() {</span>
+    <span class="s2">//Array of sizes</span>
+    <span class="s1">val </span><span class="s0">sizes = intArrayOf(</span><span class="s3">10</span><span
+            class="s0">, </span><span class="s3">100</span><span class="s0">, </span><span class="s3">200</span><span
+            class="s0">, </span><span class="s3">500</span><span class="s0">, </span><span class="s3">1000</span><span
+            class="s0">, </span><span class="s3">2000</span><span class="s0">, </span><span class="s3">5000</span><span
+            class="s0">, </span><span class="s3">10000</span><span class="s0">)</span>
+    <span class="s1">val </span><span class="s0">records = mutableListOf&lt;Record&gt;()</span>
+
+    <span class="s2">// Create arrays for each size in sizes array</span>
+    <span class="s1">val </span><span class="s0">arrays = sizes.map { generateArrayNth(it) }</span>
+
+    <span class="s2">// Per each array repeat process 50 times and take time from quicksorting</span>
+    <span class="s0">arrays.map { a -&gt;</span>
+        <span class="s1">val </span><span class="s0">timeRecords = mutableListOf&lt;Long&gt;()</span>
+        <span class="s0">repeat(</span><span class="s3">50</span><span class="s0">) {</span>
+            <span class="s0">timeRecords.add(permuteAndSortTime(a.toMutableList()))</span>
+        <span class="s0">}</span>
+        <span class="s2">// add total of time records in records array</span>
+        <span class="s0">records.add(Record(a.size, timeRecords))</span>
+    <span class="s0">}</span>
+    <span class="s2">//print results</span>
+    <span class="s0">records.map { println(</span><span class="s4">&quot;Array Size: </span><span
+            class="s5">${</span><span class="s0">it.size</span><span class="s5">}</span><span
+            class="s4">, times: </span><span class="s5">${</span><span class="s0">it.times.toLongArray().contentToString()</span><span
+            class="s5">}</span><span class="s4">&quot;</span><span class="s0">) }</span>
+
+    <span class="s2">//plot records</span>
+    <span class="s1">val </span><span class="s0">p = plot(records)</span>
+
+    <span class="s2">// Export to HTML.</span>
+    <span class="s2">// Note: if all you need is to save HTML to a file than you can just use the 'ggsave()' function.</span>
+    <span class="s1">val </span><span
+            class="s0">content = PlotHtmlExport.buildHtmlFromRawSpecs(p.toSpec(), scriptUrl(</span><span class="s4">&quot;2.0.4&quot;</span><span
+            class="s0">))</span>
+    <span class="s0">ggsave(p, </span><span class="s4">&quot;myPlot.svg&quot;</span><span class="s0">)</span>
+    <span class="s0">openInBrowser(content)</span>
+<span class="s0">}</span>
+
+<span class="s2">/**</span>
+ <span class="s2">*</span>
+ <span class="s2">* Permute and Sort</span>
+ <span class="s2">*</span>
+ <span class="s2">* </span><span class="s6">@param </span><span class="s2">A MutableList of Int</span>
+ <span class="s2">* </span><span class="s6">@return </span><span class="s2">Time of sorting using quicksort</span>
+ <span class="s2">*/</span>
+<span class="s1">fun </span><span class="s0">permuteAndSortTime(A: MutableList&lt;Int&gt;): Long {</span>
+    <span class="s1">val </span><span class="s0">permutation = fisherYatesPermutation(A)</span>
+    <span class="s1">return </span><span class="s0">measureTimeMillis {</span>
+        <span class="s0">quicksort(permutation, </span><span class="s3">0</span><span class="s0">, permutation.lastIndex)</span>
+    <span class="s0">}</span>
+<span class="s0">}</span>
+
+<span class="s2">/**</span>
+ <span class="s2">* QuickSort method</span>
+ <span class="s2">*</span>
+ <span class="s2">* </span><span class="s6">@param </span><span class="s2">A Array to sort</span>
+ <span class="s2">* </span><span class="s6">@param </span><span class="s2">lo Lowest Index</span>
+ <span class="s2">* </span><span class="s6">@param </span><span class="s2">hi Highest Index</span>
+ <span class="s2">* </span><span class="s6">@return </span><span class="s2">Sorted array</span>
+ <span class="s2">*/</span>
+<span class="s1">fun </span><span class="s0">quicksort(A: MutableList&lt;Int&gt;, lo: Int, hi: Int): MutableList&lt;Int&gt; {</span>
+    <span class="s1">if </span><span class="s0">(lo &lt; hi) {</span>
+        <span class="s1">val </span><span class="s0">p = randomizedPartition(A, lo, hi)</span>
+        <span class="s0">quicksort(A, lo, p - </span><span class="s3">1</span><span class="s0">)</span>
+        <span class="s0">quicksort(A, p + </span><span class="s3">1</span><span class="s0">, hi)</span>
+    <span class="s0">}</span>
+    <span class="s1">return </span><span class="s0">A</span>
+<span class="s0">}</span>
+
+<span class="s2">/**</span>
+ <span class="s2">* Method that generates a random partition</span>
+ <span class="s2">*</span>
+ <span class="s2">* </span><span class="s6">@param </span><span class="s2">A Array to sort</span>
+ <span class="s2">* </span><span class="s6">@param </span><span class="s2">lo Lowest Index</span>
+ <span class="s2">* </span><span class="s6">@param </span><span class="s2">hi Highest Index</span>
+ <span class="s2">* </span><span class="s6">@return </span><span class="s2">ordered partition</span>
+ <span class="s2">*/</span>
+<span class="s1">fun </span><span
+            class="s0">randomizedPartition(A: MutableList&lt;Int&gt;, lo: Int, hi: Int): Int {</span>
+    <span class="s1">val </span><span class="s0">pivotIndex = Random.nextInt(lo, hi)</span>
+    <span class="s0">A[pivotIndex] = A[hi].also { A[hi] = A[pivotIndex] }</span>
+    <span class="s1">return </span><span class="s0">partition(A, lo, hi)</span>
+<span class="s0">}</span>
+
+<span class="s2">/**</span>
+ <span class="s2">* Method to sort partition</span>
+ <span class="s2">*</span>
+ <span class="s2">* </span><span class="s6">@param </span><span class="s2">A Array to sort</span>
+ <span class="s2">* </span><span class="s6">@param </span><span class="s2">lo Lowest Index</span>
+ <span class="s2">* </span><span class="s6">@param </span><span class="s2">hi Highest Index</span>
+ <span class="s2">* </span><span class="s6">@return </span><span class="s2">Sorted Partition</span>
+ <span class="s2">*/</span>
+<span class="s1">fun </span><span class="s0">partition(A: MutableList&lt;Int&gt;, lo: Int, hi: Int): Int {</span>
+    <span class="s1">val </span><span class="s0">pivot = A[hi]</span>
+    <span class="s1">var </span><span class="s0">i = lo</span>
+    <span class="s1">for </span><span class="s0">(j </span><span class="s1">in </span><span class="s0">lo..hi) {</span>
+        <span class="s1">if </span><span class="s0">(A[j] &lt; pivot) {</span>
+            <span class="s0">A[i] = A[j].also { A[j] = A[i] }</span>
+            <span class="s0">i += </span><span class="s3">1</span>
+        <span class="s0">}</span>
+    <span class="s0">}</span>
+    <span class="s0">A[i] = A[hi].also { A[hi] = A[i] }</span>
+    <span class="s1">return </span><span class="s0">i</span>
+<span class="s0">}</span>
+
+<span class="s2">/**</span>
+ <span class="s2">* Fisher-Yates Permutation</span>
+ <span class="s2">*</span>
+ <span class="s2">* </span><span class="s6">@param </span><span class="s2">A Array to permute</span>
+ <span class="s2">* </span><span class="s6">@return </span><span class="s2">Permuted array</span>
+ <span class="s2">*/</span>
+<span class="s1">fun </span><span
+            class="s0">fisherYatesPermutation(A: MutableList&lt;Int&gt;): MutableList&lt;Int&gt; {</span>
+    <span class="s1">for </span><span class="s0">(i </span><span class="s1">in </span><span class="s0">A.lastIndex downTo </span><span
+            class="s3">1</span><span class="s0">) {</span>
+        <span class="s1">val </span><span class="s0">j = Random.nextInt(</span><span class="s3">0</span><span
+            class="s0">, i)</span>
+        <span class="s0">A[j] = A[i].also { A[i] = A[j] }</span>
+    <span class="s0">}</span>
+    <span class="s1">return </span><span class="s0">A</span>
+<span class="s0">}</span>
+
+<span class="s2">/**</span>
+ <span class="s2">* Generate array of n size</span>
+ <span class="s2">*</span>
+ <span class="s2">* </span><span class="s6">@param </span><span class="s2">n size</span>
+ <span class="s2">* </span><span class="s6">@return </span><span class="s2">Array of n size from 1 -&gt; n</span>
+ <span class="s2">*/</span>
+<span class="s1">fun </span><span class="s0">generateArrayNth(n: Int): IntArray {</span>
+    <span class="s1">return </span><span class="s0">IntArray(n) { i -&gt; i + </span><span class="s3">1 </span><span
+            class="s0">}</span>
+<span class="s0">}</span>
+
+<span class="s2">/**</span>
+ <span class="s2">* Record Class</span>
+ <span class="s2">*/</span>
+<span class="s1">class </span><span class="s0">Record(</span><span class="s1">val </span><span
+            class="s0">size: Int, </span><span class="s1">val </span><span
+            class="s0">times: MutableList&lt;Long&gt;)</span>
+
+<span class="s2">/**</span>
+ <span class="s2">* Plot Record Array</span>
+ <span class="s2">*</span>
+ <span class="s2">* </span><span class="s6">@param </span><span class="s2">records Records Array to Plot</span>
+ <span class="s2">* </span><span class="s6">@return </span><span class="s2">Plot</span>
+ <span class="s2">*/</span>
+<span class="s1">fun </span><span class="s0">plot(records: MutableList&lt;Record&gt;): Plot {</span>
+    <span class="s1">val </span><span class="s0">data = mapOf(</span>
+        <span class="s4">&quot;Size&quot; </span><span class="s0">to records.map { i -&gt; List(i.times.size) { i.size } }.flatten(),</span>
+        <span class="s4">&quot;Time&quot; </span><span class="s0">to records.flatMap { it.times }</span>
+    <span class="s0">)</span>
+
+    <span class="s1">var </span><span class="s0">p = letsPlot(data) { x = </span><span
+            class="s4">&quot;Size&quot;</span><span class="s0">; y = </span><span
+            class="s4">&quot;Time&quot; </span><span class="s0">}</span>
+    <span class="s0">p += geomPoint { color = </span><span class="s4">&quot;Time&quot; </span><span class="s0">} + statSmooth(method = </span><span
+            class="s4">&quot;loess&quot;</span><span class="s0">) { color = </span><span
+            class="s4">&quot;Time&quot; </span><span class="s0">} + ggsize(</span><span class="s3">1500</span><span
+            class="s0">, </span><span class="s3">700</span><span class="s0">)</span>
+    <span class="s1">return </span><span class="s0">p</span>
+<span class="s0">}</span>
+
+<span class="s2">/**</span>
+ <span class="s2">* Method to open plot in browser</span>
+ <span class="s2">*</span>
+ <span class="s2">* </span><span class="s6">@param </span><span class="s2">content Content to open in browser and save in my_plot.html file</span>
+ <span class="s2">*/</span>
+<span class="s1">fun </span><span class="s0">openInBrowser(content: String) {</span>
+    <span class="s1">val </span><span class="s0">dir = File(System.getProperty(</span><span class="s4">&quot;user.dir&quot;</span><span
+            class="s0">), </span><span class="s4">&quot;lets-plot-images&quot;</span><span class="s0">)</span>
+    <span class="s0">dir.mkdir()</span>
+    <span class="s1">val </span><span class="s0">file = File(dir.canonicalPath, </span><span class="s4">&quot;my_plot.html&quot;</span><span
+            class="s0">)</span>
+    <span class="s0">file.createNewFile()</span>
+    <span class="s0">file.writeText(content)</span>
+
+    <span class="s0">Desktop.getDesktop().browse(file.toURI())</span>
+<span class="s0">}</span></pre>
+</body>
+</html>
